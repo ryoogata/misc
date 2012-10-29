@@ -163,6 +163,8 @@ static int access_checker(request_rec *r)
           if (t-n->timestamp<page_interval && n->count>=page_count) {
             ret = HTTP_FORBIDDEN;
             ntt_insert(hit_list, r->connection->remote_ip, time(NULL));
+            // 追加でのログ出力
+            LOG(LOG_ALERT, "URI is being hit too much");
           } else {
 
             /* Reset our hit count list as necessary */
@@ -185,6 +187,8 @@ static int access_checker(request_rec *r)
           if (t-n->timestamp<site_interval && n->count>=site_count) {
             ret = HTTP_FORBIDDEN;
             ntt_insert(hit_list, r->connection->remote_ip, time(NULL));
+            // 追加でのログ出力
+            LOG(LOG_ALERT, "site is being hit too much");
           } else {
 
             /* Reset our hit count list as necessary */
@@ -233,6 +237,9 @@ static int access_checker(request_rec *r)
             LOG(LOG_ALERT, "Couldn't open logfile %s: %s",filename, strerror(errno));
 	  }
 
+        //ログファイル ( dos-* ) の削除
+        //remove(filename);
+
         } /* if (temp file does not exist) */
 
       } /* if (ret == HTTP_FORBIDDEN) */
@@ -248,7 +255,8 @@ static int access_checker(request_rec *r)
             r->filename);
     }
 
-    return ret;
+    //DDoS の検知のみを行い、遮断を行わないように return OK を指定
+    return OK;
 }
 
 int is_whitelisted(const char *ip) {
