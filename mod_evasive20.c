@@ -52,6 +52,7 @@ module AP_MODULE_DECLARE_DATA evasive20_module;
 #define DEFAULT_SITE_INTERVAL   1       // Default 1 Second site interval
 #define DEFAULT_BLOCKING_PERIOD 10      // Default for Detected IPs; blocked for 10 seconds
 #define DEFAULT_LOG_DIR		"/tmp"  // Default temp directory
+#define DEFAULT_DO_NOT_DROP	0	// Default Paket drop configuration 0:Drop 1:Don't Drop
 
 /* END DoS Evasive Maneuvers Definitions */
 
@@ -102,6 +103,7 @@ static int page_interval = DEFAULT_PAGE_INTERVAL;
 static int site_count = DEFAULT_SITE_COUNT;
 static int site_interval = DEFAULT_SITE_INTERVAL;
 static int blocking_period = DEFAULT_BLOCKING_PERIOD;
+static int do_not_drop = DEFAULT_DO_NOT_DROP;
 static char *email_notify = NULL;
 static char *log_dir = NULL;
 static char *system_command = NULL;
@@ -237,9 +239,6 @@ static int access_checker(request_rec *r)
             LOG(LOG_ALERT, "Couldn't open logfile %s: %s",filename, strerror(errno));
 	  }
 
-        //ログファイル ( dos-* ) の削除
-        //remove(filename);
-
         } /* if (temp file does not exist) */
 
       } /* if (ret == HTTP_FORBIDDEN) */
@@ -255,8 +254,12 @@ static int access_checker(request_rec *r)
             r->filename);
     }
 
-    //DDoS の検知のみを行い、遮断を行わないように return OK を指定
-    return OK;
+    /* do_not_drop  0:Drop  1:Don't Drop */
+    if ( do_not_drop == 0 ) {
+      return ret;
+    } else {
+      return OK;
+   }
 }
 
 int is_whitelisted(const char *ip) {
@@ -652,6 +655,18 @@ get_system_command(cmd_parms *cmd, void *dconfig, const char *value) {
   return NULL;
 } 
 
+static const char *
+get_do_not_drop(cmd_parms *cmd, void *dconfig, const char *value) {
+  long n = strtol(value, NULL, 0);
+  if (n<=0) {
+    do_not_drop = DEFAULT_DO_NOT_DROP;
+  } else {
+    do_not_drop = n;
+  }
+
+  return NULL;
+}
+
 /* END Configuration Functions */
 
 static const command_rec access_cmds[] =
@@ -685,6 +700,9 @@ static const command_rec access_cmds[] =
 
         AP_INIT_ITERATE("DOSWhitelist", whitelist, NULL, RSRC_CONF,
                 "IP-addresses wildcards to whitelist"),
+
+        AP_INIT_TAKE1("DOSDoNotDrop", get_do_not_drop, NULL, RSRC_CONF,
+                "Drop Packet or not"),
 
 	{ NULL }
 };
