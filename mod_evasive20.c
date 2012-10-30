@@ -212,13 +212,18 @@ static int access_checker(request_rec *r)
         FILE *file;
 
         snprintf(filename, sizeof(filename), "%s/dos-%s", log_dir != NULL ? log_dir : DEFAULT_LOG_DIR, r->connection->remote_ip);
+
+	// dos-* ファイルが存在していてもログは出力するようにする
+        LOG(LOG_ALERT, "Blacklisting address %s: possible DoS attack.", r->connection->remote_ip);
+
         if (stat(filename, &s)) {
           file = fopen(filename, "w");
           if (file != NULL) {
             fprintf(file, "%ld\n", getpid());
             fclose(file);
 
-            LOG(LOG_ALERT, "Blacklisting address %s: possible DoS attack.", r->connection->remote_ip);
+            // LOG(LOG_ALERT, "Blacklisting address %s: possible DoS attack.", r->connection->remote_ip);
+
             if (email_notify != NULL) {
               snprintf(filename, sizeof(filename), MAILER, email_notify);
               file = popen(filename, "w");
