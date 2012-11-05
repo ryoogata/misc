@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # 送信先メールアドレスの指定
-MAILADDR='r-ogata@bbtower.co.jp'
+MAILADDR=''
 
 
 # IP アドレスからホスト名を検索
